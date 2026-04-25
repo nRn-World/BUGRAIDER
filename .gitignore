@@ -27,3 +27,5 @@ dist-ssr
 *.sw?
 
 .vercel
+.claude/
+*.bak
