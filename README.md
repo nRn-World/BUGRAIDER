@@ -6,6 +6,11 @@ This repository is now intentionally centered around a single current release:
 
 - [BUGRAIDER_PROMPT_v5_PRO.md](./BUGRAIDER_PROMPT_v5_PRO.md)
 
+## Preview
+
+![BUGRAIDER preview 1](./Screenshots/Finish.png)
+![BUGRAIDER preview 2](./Screenshots/Finisher.png)
+
 ## What It Does
 
 BUGRAIDER tells an AI agent to:
