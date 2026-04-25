@@ -63,4 +63,4 @@ BUGRAIDER is a prompt, not a static analyzer. Results still depend on the model,
 
 ## License
 
-See [LICENSE](./LICENSE).
+Licensed under the nRn Open Attribution License 2.0. Commercial use is allowed, with attribution to nRn World. See [LICENSE](./LICENSE).
