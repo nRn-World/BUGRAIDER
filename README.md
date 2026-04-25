@@ -1,166 +1,90 @@
-# BUGRAIDER — Intelligent Code Auditor
+# BUGRAIDER - AI Code Audit Prompt
 
-> **Short, color-coded reports that anyone can understand.**
-> Paste the prompt into any AI agent — Claude, ChatGPT, Gemini, Cursor, Windsurf, opencode.
+BUGRAIDER is a professional system prompt for turning modern AI agents into structured code auditors. It is designed to help an agent inspect a project, identify real risks, communicate clearly, and only propose safe changes with the user's approval.
 
----
+This repository currently contains multiple generations of the prompt, with `v5` as the recommended version.
 
-![Version](https://img.shields.io/badge/version-4.0-blue)
-![License](https://img.shields.io/badge/license-nRn--Open-green)
-![Works With](https://img.shields.io/badge/works%20with-Claude%20%7C%20GPT%20%7C%20Gemini%20%7C%20Cursor%20%7C%20Windsurf%20%7C%20opencode-purple)
-![Made by](https://img.shields.io/badge/made%20by-nRn%20World-orange)
+## Recommended Version
 
----
+Use [BUGRAIDER_PROMPT_v5_PRO.md](./BUGRAIDER_PROMPT_v5_PRO.md).
 
-## What is BUGRAIDER?
+Why `v5`:
 
-BUGRAIDER is a system prompt that turns any AI agent into a code auditor. It finds bugs, security vulnerabilities, performance issues, and quality problems — and reports using colors so you understand the situation at a glance.
+- Better signal-to-noise ratio
+- Stronger false-positive control
+- Clearer severity and confidence rules
+- Better large-project batching
+- Safer fix workflow
+- More professional report format
+- Better support for follow-up actions after the audit
 
-When you activate BUGRAIDER, you get a report that looks like this:
+## Prompt Versions
 
-```
-🚦  🔴🔴🟡🟢  —  2 critical, 1 warning, rest is ok
+| Version | File | Notes |
+|---|---|---|
+| v1.5 | `BUGRAIDER_PROMPT_Text.txt` | Original long-form audit prompt. Very detailed, but heavy and verbose. |
+| v4.0 | `BUGRAIDER_PROMPT_v4_SMART.md` | Shorter, more visual, easier to use interactively. |
+| v5.0 | `BUGRAIDER_PROMPT_v5_PRO.md` | Current flagship version. Stronger audit workflow, better judgment, cleaner reporting. |
 
-═══════════════════════════════════════════
-  BUGRAIDER v4 — MyApp
-═══════════════════════════════════════════
+## What BUGRAIDER Does
 
-🔴 SECURITY — Must fix NOW
-• API key visible in source code → config.js:12
-• SQL injection possible → api.py:45
+BUGRAIDER tells an AI agent to:
 
-🔴 STABILITY — Crash risk
-• App crashes if user not logged in → auth.js:88
-
-🔵 PERFORMANCE — Should fix soon
-• All images load at once → gallery.js:30
-
-🟡 QUALITY — Good to fix
-• 8 unused functions → utils.py
-
-🟢 CLEAN FILES
-• index.html, styles.css, README.md
-
-───────────────────────────────────────────
-  Security: 🔴   Stability: 🔴
-  Quality: 🟡   Performance: 🔵
-═══════════════════════════════════════════
-```
-
----
-
-## Versions
-
-| Version | File | Description |
-|---------|------|-------------|
-| **v1.5** | `BUGRAIDER_PROMPT.md` | Original — detailed, 975 lines. 8 phases, confidence scores, clean certificate, audit history. Good for deep analysis but produces long reports. |
-| **v2.0** | `BUGRAIDER_PROMPT_v2_SIMPLIFIED.md` | Simplified — ~200 lines. Groups issues, simpler report structure. |
-| **v3.0** | `BUGRAIDER_PROMPT_v3_COLOR.md` | Color-coded — 🔴🔵🟡🟢. Max 20 line report. Short and visual. |
-| **v4.0** | `BUGRAIDER_PROMPT_v4_SMART.md` | **Latest.** Traffic light header, smart grouping, progressive scanning, memory, export. |
-
-### Which one should I use?
-
-- **Start with v4.0** — best for most use cases
-- **v3.0** if you want something even simpler
-- **v1.5** if you want maximum detail and don't mind long reports
-
----
+- map the whole project before judging it
+- detect bugs, security issues, performance problems, and maintainability risks
+- separate verified findings from lower-confidence suspicions
+- cite exact files and line numbers
+- mask secrets instead of exposing them
+- avoid changing code without permission
+- present a clean next-step workflow for fixes, detail review, and exports
 
 ## Quick Start
 
-### Step 1 — Choose a version
+1. Open the prompt file you want to use.
+2. Paste it as the system prompt or first message in a fresh AI chat.
+3. Let the agent inspect the project.
+4. Choose whether to review findings, export the report, or start fixing with approval.
 
-Open the file you want to use (`BUGRAIDER_PROMPT_v4_SMART.md` recommended).
+## Design Goals Behind v5
 
-### Step 2 — Paste
+`v5` is intentionally stricter than older versions. It pushes the model to:
 
-Copy the entire contents and paste it as:
-- A **system prompt** in your AI agent, or
-- The **first message** in a new conversation
+- inspect before assuming
+- avoid calling cosmetic issues "critical"
+- avoid flooding the user with duplicate findings
+- clearly mark uncertainty
+- summarize patterns instead of listing the same issue ten times
+- preserve working code unless the user approves changes
 
-### Step 3 — Go
+That gives a more senior, more trustworthy audit style.
 
-BUGRAIDER activates and asks which scan mode you want. Then share your project or paste your files.
+## Compatibility
 
----
+BUGRAIDER is prompt-first, so it can be used with most modern AI coding tools, including:
 
-## Features (v4.0)
+- ChatGPT
+- Claude
+- Gemini
+- Cursor
+- Windsurf
+- GitHub Copilot Chat
+- other agents that accept system or setup prompts
 
-| Feature | Description |
-|---------|-------------|
-| 🚦 **Traffic light header** | One line showing the status: `🔴🔴🟡🟢` |
-| 📂 **Smart grouping** | Issues grouped by type (Security, Stability, Performance, Quality) |
-| ⏳ **Progressive scanning** | For large projects — show results as you go |
-| 📊 **Fix progress** | Counter showing `1 of 2 done` |
-| 🧠 **Memory** | Dismissed findings are remembered |
-| 💾 **Export** | Save the report as a `.md` file |
-| 🎯 **Understand the project** | Asks what the project does before analyzing |
+## Important Safety Note
 
-## Color System
-
-| Color | Meaning | Examples |
-|-------|---------|----------|
-| 🔴 RED | Must fix NOW | Leaked keys, crash bugs, SQL injection |
-| 🔵 BLUE | Should fix soon | Performance issues, memory leaks |
-| 🟡 YELLOW | Good to fix | Dead code, typos, debug output |
-| 🟢 GREEN | No issues | File is clean |
-
-## Supported Languages
-
-- **C# / Unity**
-- **JavaScript / TypeScript** (React, Vue, Angular, Next.js, Node.js)
-- **Python** (Django, FastAPI, Flask)
-- **HTML / CSS**
-- **SQL**
-- **Config files** (YAML, JSON, TOML, Dockerfile, CI/CD)
-
-## Compatible AI Agents
-
-| Agent | Status |
-|-------|--------|
-| Claude (Anthropic) | ✅ |
-| ChatGPT / GPT-4o | ✅ |
-| Gemini (Google) | ✅ |
-| Cursor | ✅ |
-| Windsurf | ✅ |
-| GitHub Copilot Chat | ✅ |
-| opencode | ✅ |
-
----
-
-## Disclaimer
-
-BUGRAIDER is a text-based prompt. It is NOT software, NOT an application, and NOT a service. It instructs an AI language model to analyze code. nRn World has no control over how any AI model interprets or acts upon this prompt.
-
-Use at your own risk. Always back up your code before making changes.
-
----
+BUGRAIDER is a prompt, not a static analyzer. Results still depend on the model, available tools, and project access. Always review findings and keep a backup before applying changes.
 
 ## License
 
-Licensed under the **nRn Open Attribution License**.
+See [LICENSE](./LICENSE).
 
-- ✅ Free to use personally
-- ✅ Free to modify
-- ✅ Free to share
-- ✅ Free to use in commercial projects
-- ⚠️ For commercial use — include: `© 2026 nRn World — BUGRAIDER Prompt. All rights reserved.`
+## Project Notes
 
-See `LICENSE` for full terms.
+During this upgrade pass, the main opportunities found in the repository were:
 
----
+- the prompt product is stronger than the surrounding presentation, so docs needed cleanup
+- earlier prompt versions are useful history, but they create version drift without a clear flagship
+- some text assets had encoding artifacts, which made the project feel less polished
+- the repo includes legacy/game-oriented app code that appears separate from the BUGRAIDER prompt product
 
-## Contributing
-
-Found a way to improve BUGRAIDER? Open a Pull Request or Issue!
-
-Suggestions welcome for:
-- New language-specific rules (Rust, Go, Swift, Kotlin, etc.)
-- New security checks
-- Better formatting or structure
-- Translation to other languages
-
----
-
-*© 2026 nRn World — All rights reserved.*
-*Created by nRn World | BUGRAIDER v4.0*
+`v5` is meant to give the project a clearer center of gravity.
