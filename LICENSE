@@ -1,97 +1,119 @@
-nRn OPEN ATTRIBUTION LICENSE
-Version 2.0 - 2026
+# nRn OPEN ATTRIBUTION LICENSE
+## Version 2.0 - 2026
 
-Copyright (c) 2026 nRn World
+---
+
+**Copyright (c) 2026 nRn World**
 
 This license applies to the BUGRAIDER prompt, related prompt files, and any
 derivative works distributed from this repository (the "Work").
 
-1. Grant of Permission
+---
+
+## 1. 📜 Grant of Permission
 
 Subject to the conditions below, permission is granted to any person obtaining
 a copy of the Work to:
 
-- use the Work for personal, educational, internal, and commercial purposes
-- copy and redistribute the Work
-- modify, adapt, translate, or build upon the Work
-- include the Work in tools, products, services, workflows, or other projects
+- ✅ Use the Work for personal, educational, internal, and commercial purposes
+- ✅ Copy and redistribute the Work
+- ✅ Modify, adapt, translate, or build upon the Work
+- ✅ Include the Work in tools, products, services, workflows, or other projects
 
-2. Conditions
+---
 
-2.1 Attribution
+## 2. 📋 Conditions
+
+### 2.1 Attribution
 
 If you publicly distribute the Work, or use it as part of a commercial product
 or service, you must retain attribution to the original creator.
 
-Acceptable attribution examples include:
+**Acceptable attribution examples:**
 
 - "Original BUGRAIDER prompt by nRn World"
 - "Based on BUGRAIDER by nRn World"
 - "Includes BUGRAIDER prompt technology by nRn World"
 
-If you prefer a full notice, you may use:
+**Full notice option:**
+> Copyright (c) 2026 nRn World - BUGRAIDER
 
-Copyright (c) 2026 nRn World - BUGRAIDER
+---
 
-2.2 Preservation of Notice
+### 2.2 Preservation of Notice
 
 If you redistribute the Work or a substantial portion of it, you must retain:
 
-- this license file or its full text
-- the original copyright notice
+- ✅ This license file or its full text
+- ✅ The original copyright notice
 
-2.3 Modified Versions
+---
+
+### 2.3 Modified Versions
 
 If you distribute a modified version, you must clearly indicate that changes
 were made. You may not present a modified version as the original official
 BUGRAIDER release from nRn World.
 
-2.4 No False Claim of Authorship
+---
+
+### 2.4 No False Claim of Authorship
 
 You may not claim that you are the original creator of the unmodified Work.
 
-3. No Trademark or Endorsement Grant
+---
+
+## 3. 🚫 No Trademark or Endorsement Grant
 
 This license does not grant permission to use the names, branding, logos, or
 trade dress of nRn World in a way that implies endorsement, partnership, or
 official status.
 
-4. Disclaimer of Warranty
+---
 
-THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+## 4. ⚠️ Disclaimer of Warranty
+
+**THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,**
 INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
 PARTICULAR PURPOSE, TITLE, NON-INFRINGEMENT, ACCURACY, RELIABILITY, OR SAFETY.
 
-BUGRAIDER is a prompt for AI-assisted analysis. It is not a guarantee of
+BUGRAIDER is a prompt for AI-assisted analysis. It is **not a guarantee** of
 security, correctness, completeness, or fitness for production use.
 
-5. Limitation of Liability
+---
+
+## 5. 🔒 Limitation of Liability
 
 TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL NRN WORLD
 OR ANY CONTRIBUTORS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY,
 WHETHER IN CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION
 WITH THE WORK OR THE USE OF OR OTHER DEALINGS IN THE WORK.
 
-This includes, without limitation, liability for:
+This includes, without limitation:
 
-- code loss or corruption
-- security failures or missed vulnerabilities
-- incorrect audit findings or AI-generated fixes
-- business interruption, lost revenue, or data loss
+- Code loss or corruption
+- Security failures or missed vulnerabilities
+- Incorrect audit findings or AI-generated fixes
+- Business interruption, lost revenue, or data loss
 
-6. User Responsibility
+---
+
+## 6. 👤 User Responsibility
 
 You are responsible for reviewing, testing, validating, and approving any use
 of the Work and any output generated through it, including AI-generated
 analysis, suggestions, or code changes.
 
-7. Summary
+---
 
-- You may use, modify, and redistribute the Work, including commercially.
-- Attribution to nRn World is required for public redistribution and
-  commercial use.
-- Modified versions must be clearly labeled.
-- No endorsement rights are granted.
-- The Work is provided as-is, without warranty.
+## 7. 📌 Summary
 
-END OF TERMS
+- ✅ Use, modify, and redistribute the Work, including commercially
+- 🔗 Attribution to nRn World required for public redistribution and commercial use
+- 📝 Modified versions must be clearly labeled
+- 🚫 No endorsement rights granted
+- ⚠️ Work provided as-is without warranty
+
+---
+
+**END OF TERMS**
