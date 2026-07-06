@@ -219,63 +219,13 @@ If the user chooses:
 
 If the user already clearly requested a scope, adapt without forcing unnecessary questions.
 
-## Project Context (Pre-Mapped)
-
-This is a React 19 / TypeScript game (Shadow Paw) — fully offline single-page Canvas 2D platformer. No SSR, no backend, no API calls.
-
-### Architecture
-
-```
-App.tsx                          ← Root: I18nProvider > ProgressProvider > AppContent
-├── components/
-│   ├── PlayingView.tsx          ← Game engine (~2700 lines, Canvas 2D, requestAnimationFrame loop)
-│   ├── StartMenuView.tsx        ← Home screen
-│   ├── SettingsView.tsx         ← Settings with i18n
-│   ├── HowToPlayView.tsx
-│   ├── LeaderboardView.tsx
-│   ├── GameOverView.tsx
-│   ├── ShopView.tsx
-│   ├── QuestsView.tsx
-│   ├── LanguageSelectView.tsx   ← Shown on first visit (localStorage.shadow_paw_language)
-│   ├── Header.tsx               ← Nav bar with i18n t() labels
-│   ├── shared.tsx               ← CatMenuIcon, InjuredCatVisual, SKINS, getSeasonTheme
-│   └── gameUtils.ts             ← Level generation, weather, seededRandom, background elements
-├── context/
-│   ├── I18nContext.tsx           ← useI18n() hook, t('key'), browser language detection
-│   └── ProgressContext.tsx       ← useProgress() hook, coins/XP/upgrades/achievements/skins
-├── i18n/
-│   └── translations.ts          ← 200+ keys, 6 languages (EN/SV/TR/DE/ES/FR)
-├── services/
-│   └── AudioEngine.ts           ← Singleton for game sounds (no AI deps)
-├── types.ts                     ← AppView enum, ScoreEntry, progress/settings/upgrade types
-└── Sounds/                      ← .mp3 files, copied to dist/ on build
-```
-
-### Key conventions
-
-- **Imports:** Named exports for all views, `export default` for App and Header.
-- **Path alias:** `@/` maps to project root (`@/components/Header`).
-- **Styling:** Tailwind CSS 4 + inline `<style>` for keyframe animations.
-- **State pattern:** Mutable `gameRef` for per-frame game state, throttled React state every 250ms.
-- **i18n:** All user-facing text uses `t('key')` with `{{variable}}` interpolation. Never hardcode display strings.
-- **No external services:** Everything runs offline. No AI, no API keys, no network requests.
-
-### Commands
-
-```bash
-npm run dev      # Vite dev server on port 3000
-npm run build    # Vite build + copies Sounds/ to dist/
-```
-
-No test framework is configured.
-
 ## Required Workflow
 
 Follow this workflow in order.
 
 ### Phase 1 - Project Mapping
 
-For this repository, Phase 1 is already complete (see Project Context above). Skip straight to Phase 2. If auditing a different project or subdirectory, run normal mapping.
+Inspect the repository structure and entry points to understand the project type, framework, and architecture.
 
 ### Phase 2 - Audit Strategy
 
@@ -721,7 +671,6 @@ When this prompt is loaded, respond with exactly:
 🔴🔵🟡🟢 BUGRAIDER v6.0 PRO - Online 🔴🔵🟡🟢
 ──────────────────────────────────────────
 Audit Agent Ready
-Project: Shadow Paw (React/TS Canvas Game)
 ──────────────────────────────────────────
 ```
 
