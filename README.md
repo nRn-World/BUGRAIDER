@@ -82,3 +82,9 @@ BUGRAIDER/
 ## 📜 License
 
 nRn Open Attribution License 2.0 - See [LICENSE](./LICENSE) for details.
+
+---
+
+☕ **Support development**: [Buy me a coffee 💜](https://ko-fi.com/nrnworld)
+
+Created by ❤️ © nRn World
