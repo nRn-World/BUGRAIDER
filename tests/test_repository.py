@@ -5,36 +5,112 @@ import unittest
 class TestRepositoryIntegrity(unittest.TestCase):
     def setUp(self):
         self.repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-        self.expected_files = ['.gitignore', 'BUGRAIDER_PROMPT_v7_PRO.md', 'LICENSE', 'README.md']
+        self.expected_files = ['.gitignore', 'BUGRAIDER_PROMPT_v7_PRO.md', 'LICENSE', 'README.md', 'Screenshots', 'tests']
+
+    def _get_all_markdown_files(self):
+        """Recursively find all .md files in the repository."""
+        markdown_files = []
+        for root, _, files in os.walk(self.repo_root):
+            if '.git' in root or '__pycache__' in root:
+                continue
+            for file in files:
+                if file.endswith('.md'):
+                    markdown_files.append(os.path.join(root, file))
+        return markdown_files
 
     def test_expected_files_exist(self):
-        """Verify that all core files exist in repository root."""
+        """Verify that all core files and directories exist in repository root."""
         for filename in self.expected_files:
             filepath = os.path.join(self.repo_root, filename)
-            self.assertTrue(os.path.exists(filepath), f"Missing required file: {filename}")
+            self.assertTrue(os.path.exists(filepath), f"Missing required file/directory: {filename}")
 
     def test_markdown_code_blocks_balanced(self):
-        """Verify that code blocks (```) are balanced in markdown files."""
-        for filename in ['BUGRAIDER_PROMPT_v7_PRO.md', 'README.md']:
-            filepath = os.path.join(self.repo_root, filename)
+        """Verify that code block fence markers are balanced in markdown files."""
+        for filepath in self._get_all_markdown_files():
             with open(filepath, 'r', encoding='utf-8') as f:
-                content = f.read()
-            count = content.count('```')
-            self.assertEqual(count % 2, 0, f"Unmatched code block delimiter (```) in {filename}")
+                lines = f.readlines()
+
+            fence_stack = []
+            for line_num, line in enumerate(lines, 1):
+                match = re.match(r'^\s*(`{3,}|~{3,})', line)
+                if match:
+                    fence_str = match.group(1)
+                    fence_char = fence_str[0]
+                    fence_length = len(fence_str)
+
+                    if fence_stack and fence_stack[-1][0] == fence_char and fence_length >= fence_stack[-1][1]:
+                        fence_stack.pop()
+                    else:
+                        fence_stack.append((fence_char, fence_length, line_num))
+
+            rel_path = os.path.relpath(filepath, self.repo_root)
+            self.assertEqual(len(fence_stack), 0, f"Unclosed code fence in {rel_path} starting at line {fence_stack[0][2] if fence_stack else 'N/A'}")
 
     def test_markdown_local_links_exist(self):
         """Verify that all local markdown links resolve to existing files."""
-        for filename in ['BUGRAIDER_PROMPT_v7_PRO.md', 'README.md', 'LICENSE']:
-            filepath = os.path.join(self.repo_root, filename)
+        files_to_check = self._get_all_markdown_files()
+        license_path = os.path.join(self.repo_root, 'LICENSE')
+        if os.path.exists(license_path) and license_path not in files_to_check:
+            files_to_check.append(license_path)
+
+        for filepath in files_to_check:
             with open(filepath, 'r', encoding='utf-8') as f:
                 content = f.read()
             links = re.findall(r'\[([^\]]+)\]\(([^)]+)\)', content)
             for text, link in links:
-                if link.startswith(('http://', 'https://', '#')):
+                # Ignore remote links, anchor-only links, and non-http schemes (mailto:, tel:, etc.)
+                if re.match(r'^(https?://|#|[a-zA-Z0-9\+\.\-]+:)', link):
                     continue
-                clean_link = link.split('#')[0]
-                target_path = os.path.join(self.repo_root, clean_link)
-                self.assertTrue(os.path.exists(target_path), f"Broken link in {filename}: {link}")
+
+                clean_link = link.split('#')[0].split('?')[0]
+                if not clean_link:
+                    continue
+
+                if clean_link.startswith('/'):
+                    target_path = os.path.join(self.repo_root, clean_link.lstrip('/'))
+                else:
+                    target_path = os.path.join(os.path.dirname(filepath), clean_link)
+
+                rel_source = os.path.relpath(filepath, self.repo_root)
+                self.assertTrue(os.path.exists(target_path), f"Broken link in {rel_source}: {link} -> {target_path}")
+
+    def test_bugraider_prompt_contract(self):
+        """Verify BUGRAIDER_PROMPT_v7_PRO.md contains required prompt contract sections and structures."""
+        prompt_path = os.path.join(self.repo_root, 'BUGRAIDER_PROMPT_v7_PRO.md')
+        with open(prompt_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        required_sections = [
+            '🎯 Core Identity',
+            '⚖️ Iron Rules',
+            '🚨 Severity Model',
+            '🚀 Session Flow',
+            '📊 Report Contract',
+            '🔧 Fix Workflow',
+            '🚀 Activation Response'
+        ]
+        for section in required_sections:
+            self.assertIn(section, content, f"Missing required prompt section: {section}")
+
+        # Check activation string exists
+        self.assertIn("BUGRAIDER v7.0 PRO — Online", content)
+
+        # Check all 5 severities present
+        severities = ['🔴 Critical', '🟠 High', '🟡 Medium', '🟢 Low', '⚪ Info']
+        for sev in severities:
+            self.assertIn(sev, content, f"Missing severity in prompt: {sev}")
+
+    def test_readme_project_structure_sync(self):
+        """Verify that items listed in README Project Structure actually exist in repo."""
+        readme_path = os.path.join(self.repo_root, 'README.md')
+        with open(readme_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        structure_items = ['BUGRAIDER_PROMPT_v7_PRO.md', 'README.md', 'LICENSE', 'Screenshots/', 'tests/']
+        for item in structure_items:
+            clean_item = item.rstrip('/')
+            target_path = os.path.join(self.repo_root, clean_item)
+            self.assertTrue(os.path.exists(target_path), f"README Project Structure lists non-existent item: {item}")
 
 if __name__ == '__main__':
     unittest.main()
