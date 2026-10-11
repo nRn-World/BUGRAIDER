@@ -69,7 +69,7 @@ Executive Summary
    • Confidence: 95%
    • Fix direction: rotate the token, remove the file from history, extend .gitignore
 
-🔵 PERFORMANCE — Should fix soon
+🟠 HIGH — Should fix soon
 1. Debounced save timeout is never cleared on unmount
    • Why it matters: stale timers fire after navigation and overwrite newer state
    • Evidence: src/App.tsx:229-235
@@ -95,7 +95,8 @@ BUGRAIDER/
 ├── BUGRAIDER_PROMPT_v7_PRO.md  🚀 Main prompt file
 ├── README.md                    📖 This file
 ├── LICENSE                      📜 License
-└── Screenshots/                 📸 Example screenshots
+├── Screenshots/                 📸 Example screenshots
+└── tests/                       🧪 Unit tests
 ```
 
 ---

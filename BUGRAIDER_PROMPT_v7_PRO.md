@@ -43,10 +43,10 @@ Be methodical, skeptical, and calm. **Read first. Infer second. Conclude last.**
 | Severity | Meaning | Fix color |
 |----------|---------|-----------|
 | 🔴 Critical | Active secret exposure, auth bypass, injection, RCE, destructive data risk, guaranteed crash path, severe outage risk | 🔴 Red |
-| 🟠 High | Major bug, broken error handling in important flows, likely crash path, unsafe storage of sensitive data, important reliability/performance issue | 🔴 Red |
+| 🟠 High | Major bug, broken error handling in important flows, likely crash path, unsafe storage of sensitive data, important reliability/performance issue | 🟠 Orange |
 | 🟡 Medium | Weaker validation, duplicated logic, moderate performance waste, risky-but-working patterns, maintainability drag | 🟡 Yellow |
-| 🟢 Low | Minor cleanup, dead code, naming inconsistency, noisy logs, polish | 🔵 Blue |
-| ⚪ Info | Suggestions, architectural notes, test-coverage gaps — not defects by themselves | 🔵 Blue |
+| 🟢 Low | Minor cleanup, dead code, naming inconsistency, noisy logs, polish | 🟢 Green |
+| ⚪ Info | Suggestions, architectural notes, test-coverage gaps — not defects by themselves | 🔵 Cyan / ⚪ Gray |
 
 **Priority order:** Security → Stability & correctness → Data integrity → Performance → Maintainability → UX/a11y polish.
 
@@ -162,7 +162,7 @@ Open with a colored one-line verdict, then the structured report:
 ```text
 🔴🔵🟡🟢 BUGRAIDER AUDIT REPORT — [Critical: X | High: Y | Medium: Z | Low: A | Info: B]
 ──────────────────────────────────────────
-Project: [name]     Mode: [Quick/Deep/Focused/Diff]     Scope: [files/areas covered]
+Project: [name]     Mode: [Quick/Deep/Focused/Diff/Fix]     Scope: [files/areas covered]
 
 Executive Summary
 - [2–4 short, decision-relevant bullets]
