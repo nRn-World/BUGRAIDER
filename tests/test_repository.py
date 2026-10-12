@@ -38,8 +38,10 @@ class TestRepositoryIntegrity(unittest.TestCase):
                     fence_char = fence_str[0]
                     fence_length = len(fence_str)
 
-                    if fence_stack and fence_stack[-1][0] == fence_char and fence_length >= fence_stack[-1][1]:
-                        fence_stack.pop()
+                    if fence_stack:
+                        active_char, active_length, _ = fence_stack[-1]
+                        if fence_char == active_char and fence_length >= active_length:
+                            fence_stack.pop()
                     else:
                         fence_stack.append((fence_char, fence_length, line_num))
 
@@ -58,11 +60,18 @@ class TestRepositoryIntegrity(unittest.TestCase):
                 content = f.read()
             links = re.findall(r'\[([^\]]+)\]\(([^)]+)\)', content)
             for text, link in links:
-                # Ignore remote links, anchor-only links, and non-http schemes (mailto:, tel:, etc.)
-                if re.match(r'^(https?://|#|[a-zA-Z0-9\+\.\-]+:)', link):
+                raw_link = link.strip()
+                # Ignore remote links, scheme-relative URLs, anchor-only links, and non-http schemes (mailto:, tel:, etc.)
+                if raw_link.startswith('//') or re.match(r'^(https?://|#|[a-zA-Z0-9\+\.\-]+:)', raw_link):
                     continue
 
-                clean_link = link.split('#')[0].split('?')[0]
+                # Strip surrounding angle brackets if present e.g. <./file.md>
+                if raw_link.startswith('<') and raw_link.endswith('>'):
+                    raw_link = raw_link[1:-1].strip()
+
+                # Extract path component prior to any link title string/quotes or whitespace
+                path_part = raw_link.split()[0] if raw_link.split() else raw_link
+                clean_link = path_part.split('#')[0].split('?')[0]
                 if not clean_link:
                     continue
 
@@ -111,6 +120,60 @@ class TestRepositoryIntegrity(unittest.TestCase):
             clean_item = item.rstrip('/')
             target_path = os.path.join(self.repo_root, clean_item)
             self.assertTrue(os.path.exists(target_path), f"README Project Structure lists non-existent item: {item}")
+
+    def test_markdown_code_blocks_nested_fences_handling(self):
+        """Verify code fence balancing logic with nested fences (e.g. 3 backticks inside 4 backticks)."""
+        lines = [
+            "````markdown\n",
+            "Here is an inner snippet:\n",
+            "```python\n",
+            "print('hello world')\n",
+            "```\n",
+            "````\n"
+        ]
+        fence_stack = []
+        for line_num, line in enumerate(lines, 1):
+            match = re.match(r'^\s*(`{3,}|~{3,})', line)
+            if match:
+                fence_str = match.group(1)
+                fence_char = fence_str[0]
+                fence_length = len(fence_str)
+
+                if fence_stack:
+                    active_char, active_length, _ = fence_stack[-1]
+                    if fence_char == active_char and fence_length >= active_length:
+                        fence_stack.pop()
+                else:
+                    fence_stack.append((fence_char, fence_length, line_num))
+
+        self.assertEqual(len(fence_stack), 0)
+
+    def test_markdown_local_links_parsing_edge_cases(self):
+        """Verify link parsing helper logic handles titles, angle brackets, and scheme-relative URLs."""
+        test_cases = [
+            ("[prompt](./BUGRAIDER_PROMPT_v7_PRO.md \"Title\")", "./BUGRAIDER_PROMPT_v7_PRO.md"),
+            ("[license](<./LICENSE>)", "./LICENSE"),
+            ("[cdn](//cdn.example.com/lib.js)", None),
+            ("[http](http://example.com)", None),
+            ("[anchor](#section)", None)
+        ]
+
+        for content, expected_path_part in test_cases:
+            links = re.findall(r'\[([^\]]+)\]\(([^)]+)\)', content)
+            self.assertTrue(len(links) > 0)
+            text, link = links[0]
+            raw_link = link.strip()
+
+            if raw_link.startswith('//') or re.match(r'^(https?://|#|[a-zA-Z0-9\+\.\-]+:)', raw_link):
+                self.assertIsNone(expected_path_part)
+                continue
+
+            if raw_link.startswith('<') and raw_link.endswith('>'):
+                raw_link = raw_link[1:-1].strip()
+
+            path_part = raw_link.split()[0] if raw_link.split() else raw_link
+            clean_link = path_part.split('#')[0].split('?')[0]
+            self.assertEqual(clean_link, expected_path_part)
 
 if __name__ == '__main__':
     unittest.main()
