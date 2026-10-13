@@ -1,6 +1,7 @@
 import os
 import re
 import unittest
+import urllib.parse
 
 class TestRepositoryIntegrity(unittest.TestCase):
     def setUp(self):
@@ -10,13 +11,39 @@ class TestRepositoryIntegrity(unittest.TestCase):
     def _get_all_markdown_files(self):
         """Recursively find all .md files in the repository."""
         markdown_files = []
-        for root, _, files in os.walk(self.repo_root):
-            if '.git' in root or '__pycache__' in root:
-                continue
+        for root, dirs, files in os.walk(self.repo_root):
+            # Prune ignored directories in-place so os.walk does not recurse into them
+            dirs[:] = [d for d in dirs if d not in ('.git', '__pycache__', 'node_modules', '.venv', '.pytest_cache')]
             for file in files:
                 if file.endswith('.md'):
                     markdown_files.append(os.path.join(root, file))
         return markdown_files
+
+    def _strip_code_blocks(self, content):
+        """Remove fenced code blocks from markdown content."""
+        lines = content.splitlines()
+        filtered_lines = []
+        in_code_block = False
+        active_fence = None
+
+        for line in lines:
+            match = re.match(r'^\s*(`{3,}|~{3,})', line)
+            if match:
+                fence_str = match.group(1)
+                fence_char = fence_str[0]
+                fence_len = len(fence_str)
+                if not in_code_block:
+                    in_code_block = True
+                    active_fence = (fence_char, fence_len)
+                    continue
+                else:
+                    if fence_char == active_fence[0] and fence_len >= active_fence[1]:
+                        in_code_block = False
+                        active_fence = None
+                        continue
+            if not in_code_block:
+                filtered_lines.append(line)
+        return '\n'.join(filtered_lines)
 
     def test_expected_files_exist(self):
         """Verify that all core files and directories exist in repository root."""
@@ -58,6 +85,8 @@ class TestRepositoryIntegrity(unittest.TestCase):
         for filepath in files_to_check:
             with open(filepath, 'r', encoding='utf-8') as f:
                 content = f.read()
+
+            content = self._strip_code_blocks(content)
             links = re.findall(r'\[([^\]]+)\]\(([^)]+)\)', content)
             for text, link in links:
                 raw_link = link.strip()
@@ -72,6 +101,7 @@ class TestRepositoryIntegrity(unittest.TestCase):
                 # Extract path component prior to any link title string/quotes or whitespace
                 path_part = raw_link.split()[0] if raw_link.split() else raw_link
                 clean_link = path_part.split('#')[0].split('?')[0]
+                clean_link = urllib.parse.unquote(clean_link)
                 if not clean_link:
                     continue
 
@@ -148,11 +178,38 @@ class TestRepositoryIntegrity(unittest.TestCase):
 
         self.assertEqual(len(fence_stack), 0)
 
+    def test_markdown_code_blocks_tilde_inside_backticks(self):
+        """Verify code fence balancing logic when tilde fence is inside backtick fence and vice versa."""
+        lines = [
+            "````markdown\n",
+            "~~~python\n",
+            "print('hello')\n",
+            "~~~\n",
+            "````\n"
+        ]
+        fence_stack = []
+        for line_num, line in enumerate(lines, 1):
+            match = re.match(r'^\s*(`{3,}|~{3,})', line)
+            if match:
+                fence_str = match.group(1)
+                fence_char = fence_str[0]
+                fence_length = len(fence_str)
+
+                if fence_stack:
+                    active_char, active_length, _ = fence_stack[-1]
+                    if fence_char == active_char and fence_length >= active_length:
+                        fence_stack.pop()
+                else:
+                    fence_stack.append((fence_char, fence_length, line_num))
+
+        self.assertEqual(len(fence_stack), 0)
+
     def test_markdown_local_links_parsing_edge_cases(self):
         """Verify link parsing helper logic handles titles, angle brackets, and scheme-relative URLs."""
         test_cases = [
             ("[prompt](./BUGRAIDER_PROMPT_v7_PRO.md \"Title\")", "./BUGRAIDER_PROMPT_v7_PRO.md"),
             ("[license](<./LICENSE>)", "./LICENSE"),
+            ("[encoded](./BUGRAIDER%5FPROMPT%5Fv7%5FPRO.md)", "./BUGRAIDER_PROMPT_v7_PRO.md"),
             ("[cdn](//cdn.example.com/lib.js)", None),
             ("[http](http://example.com)", None),
             ("[anchor](#section)", None)
@@ -173,6 +230,7 @@ class TestRepositoryIntegrity(unittest.TestCase):
 
             path_part = raw_link.split()[0] if raw_link.split() else raw_link
             clean_link = path_part.split('#')[0].split('?')[0]
+            clean_link = urllib.parse.unquote(clean_link)
             self.assertEqual(clean_link, expected_path_part)
 
 if __name__ == '__main__':
