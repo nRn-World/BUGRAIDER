@@ -57,7 +57,7 @@ class TestRepositoryIntegrity(unittest.TestCase):
             with open(filepath, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
 
-            fence_stack = []
+            active_fence = None  # Stores tuple (fence_char, fence_length, line_num) when inside a code block
             for line_num, line in enumerate(lines, 1):
                 match = re.match(r'^\s*(`{3,}|~{3,})', line)
                 if match:
@@ -65,15 +65,14 @@ class TestRepositoryIntegrity(unittest.TestCase):
                     fence_char = fence_str[0]
                     fence_length = len(fence_str)
 
-                    if fence_stack:
-                        active_char, active_length, _ = fence_stack[-1]
-                        if fence_char == active_char and fence_length >= active_length:
-                            fence_stack.pop()
+                    if active_fence is None:
+                        active_fence = (fence_char, fence_length, line_num)
                     else:
-                        fence_stack.append((fence_char, fence_length, line_num))
+                        if fence_char == active_fence[0] and fence_length >= active_fence[1]:
+                            active_fence = None
 
             rel_path = os.path.relpath(filepath, self.repo_root)
-            self.assertEqual(len(fence_stack), 0, f"Unclosed code fence in {rel_path} starting at line {fence_stack[0][2] if fence_stack else 'N/A'}")
+            self.assertIsNone(active_fence, f"Unclosed code fence in {rel_path} starting at line {active_fence[2] if active_fence else 'N/A'}")
 
     def test_markdown_local_links_exist(self):
         """Verify that all local markdown links resolve to existing files."""
@@ -161,7 +160,7 @@ class TestRepositoryIntegrity(unittest.TestCase):
             "```\n",
             "````\n"
         ]
-        fence_stack = []
+        active_fence = None
         for line_num, line in enumerate(lines, 1):
             match = re.match(r'^\s*(`{3,}|~{3,})', line)
             if match:
@@ -169,14 +168,13 @@ class TestRepositoryIntegrity(unittest.TestCase):
                 fence_char = fence_str[0]
                 fence_length = len(fence_str)
 
-                if fence_stack:
-                    active_char, active_length, _ = fence_stack[-1]
-                    if fence_char == active_char and fence_length >= active_length:
-                        fence_stack.pop()
+                if active_fence is None:
+                    active_fence = (fence_char, fence_length, line_num)
                 else:
-                    fence_stack.append((fence_char, fence_length, line_num))
+                    if fence_char == active_fence[0] and fence_length >= active_fence[1]:
+                        active_fence = None
 
-        self.assertEqual(len(fence_stack), 0)
+        self.assertIsNone(active_fence)
 
     def test_markdown_code_blocks_tilde_inside_backticks(self):
         """Verify code fence balancing logic when tilde fence is inside backtick fence and vice versa."""
@@ -187,7 +185,7 @@ class TestRepositoryIntegrity(unittest.TestCase):
             "~~~\n",
             "````\n"
         ]
-        fence_stack = []
+        active_fence = None
         for line_num, line in enumerate(lines, 1):
             match = re.match(r'^\s*(`{3,}|~{3,})', line)
             if match:
@@ -195,14 +193,52 @@ class TestRepositoryIntegrity(unittest.TestCase):
                 fence_char = fence_str[0]
                 fence_length = len(fence_str)
 
-                if fence_stack:
-                    active_char, active_length, _ = fence_stack[-1]
-                    if fence_char == active_char and fence_length >= active_length:
-                        fence_stack.pop()
+                if active_fence is None:
+                    active_fence = (fence_char, fence_length, line_num)
                 else:
-                    fence_stack.append((fence_char, fence_length, line_num))
+                    if fence_char == active_fence[0] and fence_length >= active_fence[1]:
+                        active_fence = None
 
-        self.assertEqual(len(fence_stack), 0)
+        self.assertIsNone(active_fence)
+
+    def test_strip_code_blocks_ignores_inner_fences(self):
+        """Verify _strip_code_blocks does not exit code block prematurely on inner fence markers."""
+        content = (
+            "````markdown\n"
+            "```python\n"
+            "print('hello')\n"
+            "[invalid link](./does_not_exist.md)\n"
+            "```\n"
+            "````\n"
+            "[valid link](./LICENSE)\n"
+        )
+        stripped = self._strip_code_blocks(content)
+        self.assertNotIn("invalid link", stripped)
+        self.assertIn("valid link", stripped)
+
+    def test_markdown_code_blocks_balanced_with_shorter_inner_fence(self):
+        """Verify code block balancing when a shorter fence (e.g. 3 backticks) occurs inside a longer fence (e.g. 4 backticks)."""
+        lines = [
+            "````markdown\n",
+            "```python\n",
+            "x = 1\n",
+            "````\n"
+        ]
+        active_fence = None
+        for line_num, line in enumerate(lines, 1):
+            match = re.match(r'^\s*(`{3,}|~{3,})', line)
+            if match:
+                fence_str = match.group(1)
+                fence_char = fence_str[0]
+                fence_length = len(fence_str)
+
+                if active_fence is None:
+                    active_fence = (fence_char, fence_length, line_num)
+                else:
+                    if fence_char == active_fence[0] and fence_length >= active_fence[1]:
+                        active_fence = None
+
+        self.assertIsNone(active_fence)
 
     def test_markdown_local_links_parsing_edge_cases(self):
         """Verify link parsing helper logic handles titles, angle brackets, and scheme-relative URLs."""
