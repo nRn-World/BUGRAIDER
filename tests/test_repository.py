@@ -57,7 +57,10 @@ class TestRepositoryIntegrity(unittest.TestCase):
             with open(filepath, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
 
-            fence_stack = []
+            in_code_block = False
+            active_fence = None
+            open_line = None
+
             for line_num, line in enumerate(lines, 1):
                 match = re.match(r'^\s*(`{3,}|~{3,})', line)
                 if match:
@@ -65,15 +68,18 @@ class TestRepositoryIntegrity(unittest.TestCase):
                     fence_char = fence_str[0]
                     fence_length = len(fence_str)
 
-                    if fence_stack:
-                        active_char, active_length, _ = fence_stack[-1]
-                        if fence_char == active_char and fence_length >= active_length:
-                            fence_stack.pop()
+                    if not in_code_block:
+                        in_code_block = True
+                        active_fence = (fence_char, fence_length)
+                        open_line = line_num
                     else:
-                        fence_stack.append((fence_char, fence_length, line_num))
+                        if fence_char == active_fence[0] and fence_length >= active_fence[1]:
+                            in_code_block = False
+                            active_fence = None
+                            open_line = None
 
             rel_path = os.path.relpath(filepath, self.repo_root)
-            self.assertEqual(len(fence_stack), 0, f"Unclosed code fence in {rel_path} starting at line {fence_stack[0][2] if fence_stack else 'N/A'}")
+            self.assertFalse(in_code_block, f"Unclosed code fence in {rel_path} starting at line {open_line}")
 
     def test_markdown_local_links_exist(self):
         """Verify that all local markdown links resolve to existing files."""
@@ -90,13 +96,14 @@ class TestRepositoryIntegrity(unittest.TestCase):
             links = re.findall(r'\[([^\]]+)\]\(([^)]+)\)', content)
             for text, link in links:
                 raw_link = link.strip()
+
+                # Strip surrounding angle brackets if present e.g. <./file.md> or <http://example.com>
+                if raw_link.startswith('<') and raw_link.endswith('>'):
+                    raw_link = raw_link[1:-1].strip()
+
                 # Ignore remote links, scheme-relative URLs, anchor-only links, and non-http schemes (mailto:, tel:, etc.)
                 if raw_link.startswith('//') or re.match(r'^(https?://|#|[a-zA-Z0-9\+\.\-]+:)', raw_link):
                     continue
-
-                # Strip surrounding angle brackets if present e.g. <./file.md>
-                if raw_link.startswith('<') and raw_link.endswith('>'):
-                    raw_link = raw_link[1:-1].strip()
 
                 # Extract path component prior to any link title string/quotes or whitespace
                 path_part = raw_link.split()[0] if raw_link.split() else raw_link
@@ -139,14 +146,37 @@ class TestRepositoryIntegrity(unittest.TestCase):
         for sev in severities:
             self.assertIn(sev, content, f"Missing severity in prompt: {sev}")
 
+        # Check scan modes present
+        scan_modes = ['[1] QUICK', '[2] DEEP', '[3] FOCUSED', '[4] DIFF', '[5] FIX']
+        for mode in scan_modes:
+            self.assertIn(mode, content, f"Missing scan mode in prompt: {mode}")
+
+        # Check language options present
+        languages = ['English', 'Svenska', 'Türkçe', 'Deutsch', 'Español', 'Français']
+        for lang in languages:
+            self.assertIn(lang, content, f"Missing language option in prompt: {lang}")
+
+        # Check fix workflow steps present
+        fix_steps = ['Step 1 — Safety gate', 'Step 2 — Fix plan', 'Step 3 — Apply', 'Step 4 — Verification loop', 'Step 5 — Close out']
+        for step in fix_steps:
+            self.assertIn(step, content, f"Missing fix step in prompt: {step}")
+
     def test_readme_project_structure_sync(self):
         """Verify that items listed in README Project Structure actually exist in repo."""
         readme_path = os.path.join(self.repo_root, 'README.md')
         with open(readme_path, 'r', encoding='utf-8') as f:
             content = f.read()
 
-        structure_items = ['BUGRAIDER_PROMPT_v7_PRO.md', 'README.md', 'LICENSE', 'Screenshots/', 'tests/']
-        for item in structure_items:
+        # Parse items dynamically from README code block in Project Structure section
+        structure_match = re.search(r'## 📁 Project Structure\s+```[a-z]*\n([\s\S]*?)```', content)
+        self.assertIsNotNone(structure_match, "Could not find Project Structure code block in README.md")
+
+        structure_block = structure_match.group(1)
+        # Extract items listed after tree characters e.g. "├── BUGRAIDER_PROMPT_v7_PRO.md" or "└── tests/"
+        parsed_items = re.findall(r'[├└]──\s*(\S+)', structure_block)
+        self.assertTrue(len(parsed_items) > 0, "No items parsed from README Project Structure block")
+
+        for item in parsed_items:
             clean_item = item.rstrip('/')
             target_path = os.path.join(self.repo_root, clean_item)
             self.assertTrue(os.path.exists(target_path), f"README Project Structure lists non-existent item: {item}")
@@ -161,22 +191,24 @@ class TestRepositoryIntegrity(unittest.TestCase):
             "```\n",
             "````\n"
         ]
-        fence_stack = []
-        for line_num, line in enumerate(lines, 1):
+        in_code_block = False
+        active_fence = None
+        for line in lines:
             match = re.match(r'^\s*(`{3,}|~{3,})', line)
             if match:
                 fence_str = match.group(1)
                 fence_char = fence_str[0]
                 fence_length = len(fence_str)
 
-                if fence_stack:
-                    active_char, active_length, _ = fence_stack[-1]
-                    if fence_char == active_char and fence_length >= active_length:
-                        fence_stack.pop()
+                if not in_code_block:
+                    in_code_block = True
+                    active_fence = (fence_char, fence_length)
                 else:
-                    fence_stack.append((fence_char, fence_length, line_num))
+                    if fence_char == active_fence[0] and fence_length >= active_fence[1]:
+                        in_code_block = False
+                        active_fence = None
 
-        self.assertEqual(len(fence_stack), 0)
+        self.assertFalse(in_code_block)
 
     def test_markdown_code_blocks_tilde_inside_backticks(self):
         """Verify code fence balancing logic when tilde fence is inside backtick fence and vice versa."""
@@ -187,22 +219,24 @@ class TestRepositoryIntegrity(unittest.TestCase):
             "~~~\n",
             "````\n"
         ]
-        fence_stack = []
-        for line_num, line in enumerate(lines, 1):
+        in_code_block = False
+        active_fence = None
+        for line in lines:
             match = re.match(r'^\s*(`{3,}|~{3,})', line)
             if match:
                 fence_str = match.group(1)
                 fence_char = fence_str[0]
                 fence_length = len(fence_str)
 
-                if fence_stack:
-                    active_char, active_length, _ = fence_stack[-1]
-                    if fence_char == active_char and fence_length >= active_length:
-                        fence_stack.pop()
+                if not in_code_block:
+                    in_code_block = True
+                    active_fence = (fence_char, fence_length)
                 else:
-                    fence_stack.append((fence_char, fence_length, line_num))
+                    if fence_char == active_fence[0] and fence_length >= active_fence[1]:
+                        in_code_block = False
+                        active_fence = None
 
-        self.assertEqual(len(fence_stack), 0)
+        self.assertFalse(in_code_block)
 
     def test_markdown_local_links_parsing_edge_cases(self):
         """Verify link parsing helper logic handles titles, angle brackets, and scheme-relative URLs."""
@@ -221,12 +255,12 @@ class TestRepositoryIntegrity(unittest.TestCase):
             text, link = links[0]
             raw_link = link.strip()
 
+            if raw_link.startswith('<') and raw_link.endswith('>'):
+                raw_link = raw_link[1:-1].strip()
+
             if raw_link.startswith('//') or re.match(r'^(https?://|#|[a-zA-Z0-9\+\.\-]+:)', raw_link):
                 self.assertIsNone(expected_path_part)
                 continue
-
-            if raw_link.startswith('<') and raw_link.endswith('>'):
-                raw_link = raw_link[1:-1].strip()
 
             path_part = raw_link.split()[0] if raw_link.split() else raw_link
             clean_link = path_part.split('#')[0].split('?')[0]
