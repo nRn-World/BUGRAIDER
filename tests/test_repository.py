@@ -15,9 +15,34 @@ class TestRepositoryIntegrity(unittest.TestCase):
             # Prune ignored directories in-place so os.walk does not recurse into them
             dirs[:] = [d for d in dirs if d not in ('.git', '__pycache__', 'node_modules', '.venv', '.pytest_cache')]
             for file in files:
-                if file.endswith('.md'):
+                if file.lower().endswith(('.md', '.markdown')):
                     markdown_files.append(os.path.join(root, file))
         return markdown_files
+
+    def _parse_local_link(self, raw_link):
+        """Parse raw markdown link target and return clean local path, or None if external/anchor/invalid."""
+        raw_link = raw_link.strip()
+
+        # Strip surrounding angle brackets if present e.g. <./file.md> or <https://example.com>
+        if raw_link.startswith('<') and raw_link.endswith('>'):
+            raw_link = raw_link[1:-1].strip()
+
+        # Ignore remote links, scheme-relative URLs, anchor-only links, and non-http schemes (mailto:, tel:, etc.)
+        if raw_link.startswith('//') or re.match(r'^(https?://|#|[a-zA-Z0-9\+\.\-]+:)', raw_link):
+            return None
+
+        # Extract path component prior to any link title string/quotes or whitespace
+        path_part = raw_link.split()[0] if raw_link.split() else raw_link
+        clean_link = path_part.split('#')[0].split('?')[0]
+
+        # Strip line number/range suffix if present e.g. file.md:10 or file.md:10-20
+        clean_link = re.sub(r':\d+(?:-\d+)?$', '', clean_link)
+
+        clean_link = urllib.parse.unquote(clean_link)
+        if not clean_link:
+            return None
+
+        return clean_link
 
     def _strip_code_blocks(self, content):
         """Remove fenced code blocks from markdown content."""
@@ -89,20 +114,8 @@ class TestRepositoryIntegrity(unittest.TestCase):
             content = self._strip_code_blocks(content)
             links = re.findall(r'\[([^\]]+)\]\(([^)]+)\)', content)
             for text, link in links:
-                raw_link = link.strip()
-                # Ignore remote links, scheme-relative URLs, anchor-only links, and non-http schemes (mailto:, tel:, etc.)
-                if raw_link.startswith('//') or re.match(r'^(https?://|#|[a-zA-Z0-9\+\.\-]+:)', raw_link):
-                    continue
-
-                # Strip surrounding angle brackets if present e.g. <./file.md>
-                if raw_link.startswith('<') and raw_link.endswith('>'):
-                    raw_link = raw_link[1:-1].strip()
-
-                # Extract path component prior to any link title string/quotes or whitespace
-                path_part = raw_link.split()[0] if raw_link.split() else raw_link
-                clean_link = path_part.split('#')[0].split('?')[0]
-                clean_link = urllib.parse.unquote(clean_link)
-                if not clean_link:
+                clean_link = self._parse_local_link(link)
+                if clean_link is None:
                     continue
 
                 if clean_link.startswith('/'):
@@ -205,33 +218,26 @@ class TestRepositoryIntegrity(unittest.TestCase):
         self.assertEqual(len(fence_stack), 0)
 
     def test_markdown_local_links_parsing_edge_cases(self):
-        """Verify link parsing helper logic handles titles, angle brackets, and scheme-relative URLs."""
+        """Verify link parsing helper logic handles titles, angle brackets, scheme-relative URLs, and line numbers."""
         test_cases = [
             ("[prompt](./BUGRAIDER_PROMPT_v7_PRO.md \"Title\")", "./BUGRAIDER_PROMPT_v7_PRO.md"),
             ("[license](<./LICENSE>)", "./LICENSE"),
             ("[encoded](./BUGRAIDER%5FPROMPT%5Fv7%5FPRO.md)", "./BUGRAIDER_PROMPT_v7_PRO.md"),
             ("[cdn](//cdn.example.com/lib.js)", None),
             ("[http](http://example.com)", None),
-            ("[anchor](#section)", None)
+            ("[http_angle](<https://example.com>)", None),
+            ("[anchor](#section)", None),
+            ("[anchor_angle](<#section>)", None),
+            ("[line_num](./BUGRAIDER_PROMPT_v7_PRO.md:25)", "./BUGRAIDER_PROMPT_v7_PRO.md"),
+            ("[line_range](./BUGRAIDER_PROMPT_v7_PRO.md:25-30)", "./BUGRAIDER_PROMPT_v7_PRO.md")
         ]
 
         for content, expected_path_part in test_cases:
             links = re.findall(r'\[([^\]]+)\]\(([^)]+)\)', content)
             self.assertTrue(len(links) > 0)
             text, link = links[0]
-            raw_link = link.strip()
-
-            if raw_link.startswith('//') or re.match(r'^(https?://|#|[a-zA-Z0-9\+\.\-]+:)', raw_link):
-                self.assertIsNone(expected_path_part)
-                continue
-
-            if raw_link.startswith('<') and raw_link.endswith('>'):
-                raw_link = raw_link[1:-1].strip()
-
-            path_part = raw_link.split()[0] if raw_link.split() else raw_link
-            clean_link = path_part.split('#')[0].split('?')[0]
-            clean_link = urllib.parse.unquote(clean_link)
-            self.assertEqual(clean_link, expected_path_part)
+            clean_link = self._parse_local_link(link)
+            self.assertEqual(clean_link, expected_path_part, f"Failed parsing for content: {content}")
 
 if __name__ == '__main__':
     unittest.main()
