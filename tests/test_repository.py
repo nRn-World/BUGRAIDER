@@ -131,8 +131,10 @@ class TestRepositoryIntegrity(unittest.TestCase):
         for section in required_sections:
             self.assertIn(section, content, f"Missing required prompt section: {section}")
 
-        # Check activation string exists
-        self.assertIn("BUGRAIDER v7.0 PRO — Online", content)
+        # Check activation string exists and matches the documented version
+        version_match = re.search(r'^# .*BUGRAIDER v(\d+\.\d+)', content, re.MULTILINE)
+        self.assertIsNotNone(version_match, "Prompt title is missing a version number")
+        self.assertIn(f"BUGRAIDER v{version_match.group(1)} PRO — Online", content)
 
         # Check all 5 severities present
         severities = ['🔴 Critical', '🟠 High', '🟡 Medium', '🟢 Low', '⚪ Info']
